@@ -1,17 +1,15 @@
-# Set project dir one level above the makefile dir.
 # $(CURDIR) is a GNU Make variable containing the path to the working dir.
-PROJDIR := $(CURDIR)
-SRCDIR := $(PROJDIR)/src
-BUILDDIR := $(PROJDIR)/build
+SRCDIR := $(CURDIR)/src
+BUILDDIR := $(CURDIR)/build
 
 # Name of the final executable
 TARGET = $(BUILDDIR)/ipd
-C_VER = gnu11
+C_VER = gnu17
 CFLAGS = -pthread -I/usr/include
 LDFLAGS = -lpthread -luv
 
-# Decide whether the commands will be shown or not.
-VERBOSE = TRUE
+# Hide or show target name of current rule, depending on VERBOSE variable
+VERBOSE = FALSE
 
 # Create the list of directories
 DIRS = main rbtree cache
@@ -33,17 +31,8 @@ OBJS := $(subst $(SRCDIR),$(BUILDDIR),$(SRCS:.c=.o))
 # Define dependencies files for all objects.
 DEPS = $(OBJS:.o=.d)
 
-# Name the compiler.
-CC = gcc
 
-# Linux-specific part.
-RM = rm -rf
-RMDIR = rm -rf
-MKDIR = mkdir -p
-ERRIGNORE = 2>/dev/null
-
-
-# Hide or show calls depending on VERBOSE
+# Hide or show target name of current rule, depending on VERBOSE variable
 ifeq ($(VERBOSE),TRUE)
 	HIDE =
 else
@@ -54,7 +43,7 @@ endif
 define generateRules
 $(1)/%.o: %.c
 	@echo Building $$@
-	$(HIDE)$(CC) -std=$(C_VER) -c $$(INCLUDES) $(CFLAGS) -o $$@ $$< -MMD 
+	$(HIDE)gcc -std=$(C_VER) -c $$(INCLUDES) $(CFLAGS) -o $$@ $$< -MMD 
 endef
 
 # Indicates to make which targets are not files
@@ -64,7 +53,7 @@ all: directories $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(HIDE)echo Linking $@
-	$(HIDE)$(CC) $(OBJS) $(LDFLAGS) -o $(TARGET)
+	$(HIDE)gcc  $(OBJS) $(LDFLAGS) -o $(TARGET)
 
 # Include dependencies
 -include $(DEPS)
@@ -73,11 +62,11 @@ $(TARGET): $(OBJS)
 $(foreach targetdir, $(TGTDIRS), $(eval $(call generateRules, $(targetdir))))
 
 directories:
-	$(HIDE)$(MKDIR) $(TGTDIRS) $(ERRIGNORE)
+	$(HIDE)mkdir -p  $(TGTDIRS) 2>/dev/null 
 
 # Remove all objects, dependencies and exucutables generated during build
 clean:
-	$(HIDE)$(RMDIR) $(TGTDIRS) $(ERRIGNORE)
-	$(HIDE)$(RM) $(TARGET) $(ERRIGNORE)
+	$(HIDE)rm -rf $(TGTDIRS) 2>/dev/null 
+	$(HIDE)rm -rf $(TARGET) 2>/dev/null 
 	@echo Cleaning done.
 
