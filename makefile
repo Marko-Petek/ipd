@@ -25,7 +25,10 @@ VPATH = $(SRCDIRS)
 # Create a list of *.c sources in DIRS
 SRCS = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
 
-# Define objects for all sources.
+# Generate objects list situated in ./build for all sources in ./src
+# subst( from, to, inputText ), i.e.:
+# ./src/rbTree/rbTree.c  -->  ./build/rbTree/rbTree.o
+#
 OBJS := $(subst $(SRCDIR),$(BUILDDIR),$(SRCS:.c=.o))
 
 # Define dependencies files for all objects.
