@@ -1,2 +1,6 @@
 build
 build/**
+makefile~
+.gitignore~
+*.un~
+*.swp

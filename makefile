@@ -11,27 +11,49 @@ LDFLAGS = -lpthread -luv
 # Hide or show target name of current rule, depending on VERBOSE variable
 VERBOSE = FALSE
 
-# Create the list of directories
-DIRS = main rbtree cache
+# Create the list of directories where sources reside
+DIRS = main rbtree cache db
+
+# ipd/src --> ipd/src/main
+#         --> ipd/src/rbtree
+#
 SRCDIRS = $(foreach dir, $(DIRS), $(addprefix $(SRCDIR)/, $(dir)))
+
+# ipd/build --> ipd/build/main
+# 			--> ipd/build/rbtree
+#
 TGTDIRS = $(foreach dir, $(DIRS), $(addprefix $(BUILDDIR)/, $(dir)))
 
-# Generate the GCC includes pars by adding -I before each src dir
+# Generate the GCC includes pars by adding -I before each src dir.
+#
+# (...)ipd/src/main   --> -I(...)ipd/src/main
+# (...)ipd/src/rbtree --> -I(...)ipd/src/rbtree
+#
 INCLUDES = $(foreach dir, $(SRCDIRS), $(addprefix -I, $(dir)))
 
-# Add srcdirs list to VPATH (where make will look for source files).
+# Where GNU Make will look for source files.
 VPATH = $(SRCDIRS)
 
-# Create a list of *.c sources in DIRS
+# Create a list of *.c sources in DIRS.
+# wildcard part --> look into each dir for .c files --> congregate a list of all .c files from all dirs. E.g.:
+#
+#  ipd/src/main/main.c
+#  ipd/src/rbtree/rbtree.c
+#
 SRCS = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
 
 # Generate objects list situated in ./build for all sources in ./src
 # subst( from, to, inputText ), i.e.:
-# ./src/rbTree/rbTree.c  -->  ./build/rbTree/rbTree.o
+#
+# ipd/src/main/main.c      -->  ipd/build/main/main.o
+# ipd/src/rbTree/rbTree.c  -->  ipd/build/rbTree/rbTree.o
 #
 OBJS := $(subst $(SRCDIR),$(BUILDDIR),$(SRCS:.c=.o))
 
-# Define dependencies files for all objects.
+# Define "header dependency files" that will be generated in preprocessing stage.
+# .c --> .d --> .o --> .elf
+# see -MMD compile option
+#
 DEPS = $(OBJS:.o=.d)
 
 
@@ -43,6 +65,16 @@ else
 endif
 
 # Function that will generate each rule.
+# -MMD  -->  track the headers during preprocessing and generate header dependency files.
+#  See DEPS above.
+#
+# $(1) is a reference to the first argument of a user call-ed function,
+# in this case, it will be a target dir, e.g., ipd/build/main
+#
+# $@ is the target of the current rule
+# $< is the first prerequisite of the current rule
+# $^ are all the prerequisites of the current rule
+
 define generateRules
 $(1)/%.o: %.c
 	@echo Building $$@
@@ -54,6 +86,9 @@ endef
 
 all: directories $(TARGET)
 
+# Link rule
+# ipd (elf) <-- ipd/build/main/main.o, ipd/build/rbTree/rbTree.o, ...
+#
 $(TARGET): $(OBJS)
 	$(HIDE)echo Linking $@
 	$(HIDE)gcc  $(OBJS) $(LDFLAGS) -o $(TARGET)
@@ -61,7 +96,7 @@ $(TARGET): $(OBJS)
 # Include dependencies
 -include $(DEPS)
 
-# Generate rules
+# Generate compile rules
 $(foreach targetdir, $(TGTDIRS), $(eval $(call generateRules, $(targetdir))))
 
 directories:
